@@ -1,10 +1,9 @@
-from FlagEmbedding import BGEM3FlagModel
+from sentence_transformers import SentenceTransformer
 
 
 class Embedder:
     def __init__(self) -> None:
-        self._model = BGEM3FlagModel("BAAI/bge-m3", use_fp16=True)
+        self._model = SentenceTransformer("BAAI/bge-small-en-v1.5")
 
     def embed(self, text: str) -> list[float]:
-        result = self._model.encode([text])
-        return result["dense_vecs"][0].tolist()
+        return self._model.encode(text).tolist()
