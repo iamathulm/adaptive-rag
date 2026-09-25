@@ -1,6 +1,9 @@
+from app.core.config import settings
+
+
 class RRFFusion:
-    def __init__(self, k: int = 60) -> None:
-        self.k = k
+    def __init__(self, k: int | None = None) -> None:
+        self.k = settings.rrf_k if k is None else k
 
     def fuse(
         self,
