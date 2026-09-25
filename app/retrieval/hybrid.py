@@ -1,3 +1,4 @@
+from app.core.config import settings
 from app.models.retrieval import RetrievalResult
 from app.retrieval.bm25 import BM25Retriever
 from app.retrieval.dense import DenseRetriever
@@ -10,16 +11,22 @@ class HybridRetriever:
         self.dense = DenseRetriever()
         self.fusion = RRFFusion()
 
-    def search(self, query: str, top_k: int = 5) -> list[RetrievalResult]:
-        bm25_results = self.bm25.search(query, top_k)
-        dense_results = self.dense.search(query, top_k)
+    def search(
+        self,
+        query: str,
+        top_k: int | None = None,
+    ) -> list[RetrievalResult]:
+        limit = settings.retrieval_top_k if top_k is None else top_k
+
+        bm25_results = self.bm25.search(query, limit)
+        dense_results = self.dense.search(query, limit)
 
         ranked_lists = [
             [document for document, _ in bm25_results],
             [result.content for result in dense_results],
         ]
 
-        fused = self.fusion.fuse(ranked_lists, top_k)
+        fused = self.fusion.fuse(ranked_lists, limit)
 
         dense_by_content = {
             result.content: result
