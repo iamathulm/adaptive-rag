@@ -13,7 +13,7 @@ def test_dense_search(mock_store, mock_embedder) -> None:
     point.payload = {"content": "test document"}
     point.score = 0.95
 
-    mock_store.return_value.client.query_points.return_value.points = [point]
+    mock_store.return_value.search.return_value = [point]
 
     retriever = DenseRetriever()
     results = retriever.search("test query", top_k=1)

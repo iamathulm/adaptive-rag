@@ -22,4 +22,14 @@ class VectorStore:
                 ),
             )
 
-
+    def search(
+        self,
+        vector: list[float],
+        collection_name: str = "documents",
+        top_k: int = 5,
+    ):
+        return self.client.query_points(
+            collection_name=collection_name,
+            query=vector,
+            limit=top_k,
+        ).points

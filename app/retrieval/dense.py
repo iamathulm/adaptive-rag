@@ -10,12 +10,7 @@ class DenseRetriever:
 
     def search(self, query: str, top_k: int = 5) -> list[RetrievalResult]:
         vector = self.embedder.embed(query)
-
-        results = self.vector_store.client.query_points(
-            collection_name="documents",
-            query=vector,
-            limit=top_k,
-        ).points
+        results = self.vector_store.search(vector, top_k=top_k)
 
         return [
             RetrievalResult(
