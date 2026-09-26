@@ -16,3 +16,14 @@ def test_index_documents(mock_store, mock_embedder) -> None:
 
     store.ensure_collection.assert_called_once_with("documents")
     store.client.upsert.assert_called_once()
+
+    call = store.client.upsert.call_args
+    points = call.kwargs["points"]
+
+    assert len(points) == 1
+    assert points[0]["id"] == 0
+    assert points[0]["vector"] == [0.1] * 768
+    assert points[0]["payload"] == {
+        "content": "test document",
+        "source": "test",
+    }
