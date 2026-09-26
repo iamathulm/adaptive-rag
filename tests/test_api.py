@@ -55,3 +55,11 @@ def test_retrieval_endpoint_validates_request() -> None:
         json={"query": "test", "top_k": 0},
     )
     assert invalid_top_k.status_code == 422
+
+def test_health_endpoint() -> None:
+    client = TestClient(app)
+
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
