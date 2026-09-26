@@ -9,7 +9,6 @@ from app.retrieval import VectorStore
 
 
 @asynccontextmanager
-@asynccontextmanager
 async def lifespan(_: FastAPI):
     configure_logging()
 
@@ -26,6 +25,7 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
 app.include_router(retrieval_router)
+
 
 @app.get("/health")
 async def health_check() -> dict[str, str]:
