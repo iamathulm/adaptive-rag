@@ -31,7 +31,8 @@ def test_hybrid_search_combines_results(mock_dense) -> None:
 
     assert len(results) == 2
     assert all(result.source == "hybrid" for result in results)
-    assert {result.content for result in results} == {
-        "python programming",
-        "retrieval augmented generation",
-    }
+
+    by_content = {result.content: result for result in results}
+
+    assert by_content["retrieval augmented generation"].document_id == "2"
+    assert by_content["python programming"].document_id == "1"
