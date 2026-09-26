@@ -5,12 +5,22 @@ from fastapi import FastAPI
 from app.api.routes import router as retrieval_router
 from app.core.config import settings
 from app.core.logging import configure_logging, logger
+from app.retrieval import VectorStore
 
 
 @asynccontextmanager
+@asynccontextmanager
 async def lifespan(_: FastAPI):
     configure_logging()
-    logger.info("application_started", environment=settings.environment)
+
+    vector_store = VectorStore()
+    vector_store.ensure_collection()
+
+    logger.info(
+        "application_started",
+        environment=settings.environment,
+    )
+
     yield
 
 
