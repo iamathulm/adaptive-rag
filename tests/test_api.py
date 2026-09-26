@@ -40,3 +40,18 @@ def test_retrieval_endpoint() -> None:
         }
     finally:
         app.dependency_overrides.clear()
+
+def test_retrieval_endpoint_validates_request() -> None:
+    client = TestClient(app)
+
+    empty_query = client.post(
+        "/retrieval",
+        json={"query": ""},
+    )
+    assert empty_query.status_code == 422
+
+    invalid_top_k = client.post(
+        "/retrieval",
+        json={"query": "test", "top_k": 0},
+    )
+    assert invalid_top_k.status_code == 422
