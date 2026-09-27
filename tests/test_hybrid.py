@@ -7,14 +7,15 @@ from app.retrieval.hybrid import HybridRetriever
 @patch("app.retrieval.hybrid.DenseRetriever")
 def test_hybrid_search_combines_results(mock_dense) -> None:
     mock_dense.return_value.search.return_value = [
-        RetrievalResult(
-            document_id="2",
+        RetrievalResult(document_id="1",
+            chunk_id="1",
             content="retrieval augmented generation",
             score=0.9,
             source="dense",
         ),
         RetrievalResult(
-            document_id="1",
+            document_id="2",
+            chunk_id="2",
             content="python programming",
             score=0.8,
             source="dense",

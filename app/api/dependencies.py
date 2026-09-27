@@ -1,8 +1,8 @@
 from functools import lru_cache
 
-from app.retrieval.dense import DenseRetriever
+from app.retrieval.hybrid import HybridRetriever
 
 
 @lru_cache
-def get_dense_retriever() -> DenseRetriever:
-    return DenseRetriever()
+def get_retriever() -> HybridRetriever:
+    return HybridRetriever()

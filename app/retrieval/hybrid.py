@@ -6,9 +6,14 @@ from app.retrieval.fusion import RRFFusion
 
 
 class HybridRetriever:
-    def __init__(self, documents: list[dict[str, str]]) -> None:
-        self.bm25 = BM25Retriever(documents)
+    def __init__(self, documents: list[dict[str, str]] | None = None) -> None:
         self.dense = DenseRetriever()
+        indexed_documents = (
+            documents
+            if documents is not None
+            else self.dense.vector_store.get_documents()
+        )
+        self.bm25 = BM25Retriever(indexed_documents)
         self.fusion = RRFFusion()
 
     def search(
@@ -31,6 +36,7 @@ class HybridRetriever:
         return [
             RetrievalResult(
                 document_id=result.document_id,
+                chunk_id=result.chunk_id,
                 content=result.content,
                 score=score,
                 source="hybrid",

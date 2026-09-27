@@ -5,20 +5,21 @@ from app.models.retrieval import RetrievalResult
 
 
 def test_retrieval_endpoint() -> None:
-    from app.api.dependencies import get_dense_retriever
+    from app.api.dependencies import get_retriever
 
     class FakeRetriever:
         def search(self, query: str, top_k: int | None = None):
             return [
                 RetrievalResult(
-                    document_id="1",
-                    content=f"result for {query}",
-                    score=0.95,
-                    source="dense",
-                )
+    document_id="1",
+    chunk_id="1",
+    content=f"result for {query}",
+    score=0.95,
+    source="dense",
+)
             ]
 
-    app.dependency_overrides[get_dense_retriever] = lambda: FakeRetriever()
+    app.dependency_overrides[get_retriever] = lambda: FakeRetriever()
 
     try:
         client = TestClient(app)

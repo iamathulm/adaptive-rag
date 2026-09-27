@@ -17,7 +17,7 @@ class RRFFusion:
         for ranked_list in ranked_lists:
             for rank, document in enumerate(ranked_list, start=1):
                 document_id = document.document_id
-                documents[document_id] = document
+                documents.setdefault(document_id, document)
                 scores[document_id] = scores.get(document_id, 0.0) + 1 / (
                     self.k + rank
                 )

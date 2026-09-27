@@ -1,19 +1,36 @@
-from fastapi import APIRouter, Depends
+from typing import Annotated
 
-from app.api.dependencies import get_dense_retriever
-from app.models.api import RetrievalRequest, RetrievalResponse
-from app.retrieval.dense import DenseRetriever
+from fastapi import APIRouter, Depends
+from starlette.concurrency import run_in_threadpool
+
+from app.api.dependencies import get_retriever
+from app.models.api import (
+    RetrievalRequest,
+    RetrievalResponse,
+    RetrievalResponseItem,
+)
+from app.retrieval.hybrid import HybridRetriever
 
 router = APIRouter(prefix="/retrieval", tags=["retrieval"])
-retriever_dependency = Depends(get_dense_retriever)
 
 @router.post("", response_model=RetrievalResponse)
 async def retrieve(
     request: RetrievalRequest,
-    retriever: DenseRetriever = retriever_dependency,
+    retriever: Annotated[HybridRetriever, Depends(get_retriever)],
 ) -> RetrievalResponse:
-    results = retriever.search(
+    results = await run_in_threadpool(
+        retriever.search,
         request.query,
-        top_k=request.top_k,
+        request.top_k,
     )
-    return RetrievalResponse(results=results)
+    return RetrievalResponse(
+        results=[
+            RetrievalResponseItem(
+                document_id=result.document_id,
+                content=result.content,
+                score=result.score,
+                source=result.source,
+            )
+            for result in results
+        ]
+    )

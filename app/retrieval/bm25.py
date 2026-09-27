@@ -10,13 +10,16 @@ class BM25Retriever:
             document["content"].lower().split()
             for document in documents
         ]
-        self._index = BM25Okapi(tokenized)
+        self._index = BM25Okapi(tokenized) if tokenized else None
 
     def search(
         self,
         query: str,
         top_k: int = 5,
     ) -> list[RetrievalResult]:
+        if self._index is None:
+            return []
+
         scores = self._index.get_scores(query.lower().split())
         ranked = sorted(
             zip(self.documents, scores, strict=True),
@@ -27,6 +30,7 @@ class BM25Retriever:
         return [
             RetrievalResult(
                 document_id=document["document_id"],
+                chunk_id=document.get("chunk_id", document["document_id"]),
                 content=document["content"],
                 score=float(score),
                 source="bm25",

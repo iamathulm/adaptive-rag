@@ -14,7 +14,8 @@ class DenseRetriever:
 
         return [
             RetrievalResult(
-                document_id=str(result.id),
+                document_id=str(result.payload.get("document_id", result.id)),
+                chunk_id=str(result.payload.get("chunk_id", result.id)),
                 content=str(result.payload.get("content", "")),
                 score=float(result.score),
                 source="dense",

@@ -10,7 +10,11 @@ def test_dense_search(mock_store, mock_embedder) -> None:
 
     point = MagicMock()
     point.id = 1
-    point.payload = {"content": "test document"}
+    point.payload = {
+    "document_id": "1",
+    "chunk_id": "1",
+    "content": "test document",
+}
     point.score = 0.95
 
     mock_store.return_value.search.return_value = [point]

@@ -33,3 +33,42 @@ class VectorStore:
             query=vector,
             limit=top_k,
         ).points
+
+    def get_documents(
+        self,
+        collection_name: str = "documents",
+        batch_size: int = 256,
+    ) -> list[dict[str, str]]:
+        documents: list[dict[str, str]] = []
+        offset = None
+
+        while True:
+            points, offset = self.client.scroll(
+                collection_name=collection_name,
+                limit=batch_size,
+                offset=offset,
+                with_payload=True,
+                with_vectors=False,
+            )
+
+            for point in points:
+                payload = point.payload or {}
+                content = payload.get("content")
+                document_id = payload.get("document_id")
+
+                if content is None or document_id is None:
+                    continue
+
+                documents.append(
+                    {
+                        "document_id": str(document_id),
+                        "chunk_id": str(payload.get("chunk_id", point.id)),
+                        "content": str(content),
+                        "source": str(payload.get("source", "")),
+                    }
+                )
+
+            if offset is None:
+                break
+
+        return documents
