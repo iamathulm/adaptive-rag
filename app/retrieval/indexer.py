@@ -1,4 +1,4 @@
-from uuid import uuid5, NAMESPACE_URL
+from uuid import NAMESPACE_URL, uuid5
 
 from app.models.chunk import DocumentChunk
 from app.retrieval.embeddings import Embedder
