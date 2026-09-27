@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from app.models.chunk import DocumentChunk
 from app.retrieval.indexer import DocumentIndexer
 
 
@@ -12,7 +13,16 @@ def test_index_documents(mock_store, mock_embedder) -> None:
     store = mock_store.return_value
 
     indexer = DocumentIndexer()
-    indexer.index([{"content": "test document", "source": "test"}])
+
+    chunk = DocumentChunk(
+        document_id="doc-1",
+        chunk_id="doc-1:0",
+        content="test document",
+        source="test",
+        page=1,
+    )
+
+    indexer.index([chunk])
 
     store.ensure_collection.assert_called_once_with("documents")
     store.client.upsert.assert_called_once()
@@ -21,9 +31,11 @@ def test_index_documents(mock_store, mock_embedder) -> None:
     points = call.kwargs["points"]
 
     assert len(points) == 1
-    assert points[0]["id"] == 0
     assert points[0]["vector"] == [0.1] * 768
     assert points[0]["payload"] == {
+        "document_id": "doc-1",
+        "chunk_id": "doc-1:0",
         "content": "test document",
         "source": "test",
+        "page": 1,
     }

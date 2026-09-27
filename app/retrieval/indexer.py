@@ -1,3 +1,6 @@
+from uuid import uuid5, NAMESPACE_URL
+
+from app.models.chunk import DocumentChunk
 from app.retrieval.embeddings import Embedder
 from app.retrieval.vector_store import VectorStore
 
@@ -9,20 +12,21 @@ class DocumentIndexer:
 
     def index(
         self,
-        documents: list[dict[str, str]],
+        chunks: list[DocumentChunk],
         collection_name: str = "documents",
     ) -> None:
         self.vector_store.ensure_collection(collection_name)
 
         points = []
 
-        for index, document in enumerate(documents):
-            vector = self.embedder.embed(document["content"])
+        for chunk in chunks:
+            vector = self.embedder.embed(chunk.content)
+
             points.append(
                 {
-                    "id": index,
+                    "id": str(uuid5(NAMESPACE_URL, chunk.chunk_id)),
                     "vector": vector,
-                    "payload": document,
+                    "payload": chunk.model_dump(),
                 }
             )
 
