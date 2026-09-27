@@ -6,7 +6,7 @@ from app.retrieval.fusion import RRFFusion
 
 
 class HybridRetriever:
-    def __init__(self, documents: list[str]) -> None:
+    def __init__(self, documents: list[dict[str, str]]) -> None:
         self.bm25 = BM25Retriever(documents)
         self.dense = DenseRetriever()
         self.fusion = RRFFusion()
@@ -22,24 +22,18 @@ class HybridRetriever:
         dense_results = self.dense.search(query, limit)
 
         ranked_lists = [
-            [document for document, _ in bm25_results],
-            [result.content for result in dense_results],
+            bm25_results,
+            dense_results,
         ]
 
         fused = self.fusion.fuse(ranked_lists, limit)
 
-        dense_by_content = {
-            result.content: result
-            for result in dense_results
-        }
-
         return [
             RetrievalResult(
-                document_id=dense_by_content[content].document_id,
-                content=content,
+                document_id=result.document_id,
+                content=result.content,
                 score=score,
                 source="hybrid",
             )
-            for content, score in fused
-            if content in dense_by_content
+            for result, score in fused
         ]

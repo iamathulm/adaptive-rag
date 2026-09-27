@@ -22,8 +22,16 @@ def test_hybrid_search_combines_results(mock_dense) -> None:
     ]
 
     documents = [
-        "python programming",
-        "retrieval augmented generation",
+        {
+            "document_id": "1",
+            "content": "python programming",
+            "source": "test",
+        },
+        {
+            "document_id": "2",
+            "content": "retrieval augmented generation",
+            "source": "test",
+        },
     ]
 
     retriever = HybridRetriever(documents)
@@ -32,7 +40,7 @@ def test_hybrid_search_combines_results(mock_dense) -> None:
     assert len(results) == 2
     assert all(result.source == "hybrid" for result in results)
 
-    by_content = {result.content: result for result in results}
+    by_id = {result.document_id: result for result in results}
 
-    assert by_content["retrieval augmented generation"].document_id == "2"
-    assert by_content["python programming"].document_id == "1"
+    assert by_id["1"].content == "python programming"
+    assert by_id["2"].content == "retrieval augmented generation"
