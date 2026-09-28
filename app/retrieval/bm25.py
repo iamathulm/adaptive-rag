@@ -29,11 +29,11 @@ class BM25Retriever:
 
         return [
             RetrievalResult(
-                document_id=document["document_id"],
-                chunk_id=document.get("chunk_id", document["document_id"]),
-                content=document["content"],
-                score=float(score),
-                source="bm25",
-            )
+    document_id=document["document_id"],
+    chunk_id=document["chunk_id"],
+    content=document["content"],
+    score=float(score),
+    source="bm25",
+)
             for document, score in ranked[:top_k]
         ]

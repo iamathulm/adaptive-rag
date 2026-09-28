@@ -23,17 +23,21 @@ def test_hybrid_search_combines_results(mock_dense) -> None:
     ]
 
     documents = [
-        {
-            "document_id": "1",
-            "content": "python programming",
-            "source": "test",
-        },
-        {
-            "document_id": "2",
-            "content": "retrieval augmented generation",
-            "source": "test",
-        },
-    ]
+    {
+        "document_id": "1",
+        "chunk_id": "1",
+        "content": "python programming",
+        "source": "test",
+        "page": None,
+    },
+    {
+        "document_id": "2",
+        "chunk_id": "2",
+        "content": "retrieval augmented generation",
+        "source": "test",
+        "page": None,
+    },
+]
 
     retriever = HybridRetriever(documents)
     results = retriever.search("retrieval generation", top_k=2)

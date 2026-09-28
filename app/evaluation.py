@@ -29,11 +29,11 @@ class RetrievalEvaluator:
             relevant = case.relevant_chunk_ids
             hits = set(retrieved_ids) & relevant
 
-            recall = 1.0 if hits else 0.0
+            recall = len(hits) / len(relevant) if relevant else 0.0
 
             reciprocal_rank = 0.0
-            for rank, document_id in enumerate(retrieved_ids, start=1):
-                if document_id in relevant:
+            for rank, chunk_id in enumerate(retrieved_ids, start=1):
+                if chunk_id in relevant:
                     reciprocal_rank = 1.0 / rank
                     break
 
