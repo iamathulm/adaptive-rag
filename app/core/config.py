@@ -1,3 +1,4 @@
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,8 +11,7 @@ class Settings(BaseSettings):
     rrf_k: int = 60
     generation_provider: str = "mock"
     generation_model: str = "gemini-2.0-flash"
-    gemini_api_key: str | None = None
-    groq_api_key: str | None = None
+    gemini_api_key: SecretStr | None = None
     generation_timeout_seconds: float = 30.0
     generation_max_tokens: int = 512
     generation_temperature: float = 0.0

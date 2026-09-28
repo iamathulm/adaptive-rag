@@ -88,32 +88,12 @@ class GeminiAnswerGenerator(_HttpAnswerGenerator):
         }
         url = (
             "https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{self.model}:generateContent?key={self.api_key}"
+            f"{self.model}:generateContent"
         )
-        response = self._request(url, payload, {})
+        response = self._request(url, payload, {"x-goog-api-key": self.api_key})
 
         try:
             return response["candidates"][0]["content"]["parts"][0]["text"]
-        except (KeyError, IndexError, TypeError) as exc:
-            raise GenerationError("Generation provider returned an invalid response") from exc
-
-
-class GroqAnswerGenerator(_HttpAnswerGenerator):
-    def generate(self, query: str, results: list[RetrievalResult]) -> str:
-        payload = {
-            "model": self.model,
-            "messages": [{"role": "user", "content": build_prompt(query, results)}],
-            "max_tokens": self.max_tokens,
-            "temperature": self.temperature,
-        }
-        response = self._request(
-            "https://api.groq.com/openai/v1/chat/completions",
-            payload,
-            {"Authorization": f"Bearer {self.api_key}"},
-        )
-
-        try:
-            return response["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError) as exc:
             raise GenerationError("Generation provider returned an invalid response") from exc
 
@@ -129,9 +109,10 @@ def create_generator(config: Settings = settings) -> AnswerGenerator:
     if config.generation_provider == "mock":
         return MockAnswerGenerator()
     if config.generation_provider == "gemini" and config.gemini_api_key:
-        return GeminiAnswerGenerator(api_key=config.gemini_api_key, **common)
-    if config.generation_provider == "groq" and config.groq_api_key:
-        return GroqAnswerGenerator(api_key=config.groq_api_key, **common)
+        return GeminiAnswerGenerator(
+            api_key=config.gemini_api_key.get_secret_value(),
+            **common,
+        )
 
     raise GenerationError(
         f"Provider '{config.generation_provider}' is unsupported or missing its API key"

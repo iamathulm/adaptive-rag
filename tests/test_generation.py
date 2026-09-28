@@ -6,7 +6,6 @@ from app.core.config import Settings
 from app.generation.generator import (
     GeminiAnswerGenerator,
     GenerationError,
-    GroqAnswerGenerator,
     MockAnswerGenerator,
     create_generator,
 )
@@ -45,33 +44,27 @@ def test_mock_generator_is_deterministic() -> None:
 
 
 def test_gemini_generator_parses_response() -> None:
+    requests = []
+
+    def open_request(request, **_kwargs):
+        requests.append(request)
+        return FakeResponse(
+            {"candidates": [{"content": {"parts": [{"text": "Grounded answer [chunk-1]"}]}}]}
+        )
+
     generator = GeminiAnswerGenerator(
         api_key="test-key",
         model="test-model",
         timeout=1,
         max_tokens=10,
         temperature=0,
-        opener=lambda *_args, **_kwargs: FakeResponse(
-            {"candidates": [{"content": {"parts": [{"text": "Grounded answer [chunk-1]"}]}}]}
-        ),
+        opener=open_request,
     )
 
     assert generator.generate("Question", RESULTS) == "Grounded answer [chunk-1]"
-
-
-def test_groq_generator_parses_response() -> None:
-    generator = GroqAnswerGenerator(
-        api_key="test-key",
-        model="test-model",
-        timeout=1,
-        max_tokens=10,
-        temperature=0,
-        opener=lambda *_args, **_kwargs: FakeResponse(
-            {"choices": [{"message": {"content": "Grounded answer [chunk-1]"}}]}
-        ),
-    )
-
-    assert generator.generate("Question", RESULTS) == "Grounded answer [chunk-1]"
+    assert len(requests) == 1
+    assert "test-key" not in requests[0].full_url
+    assert requests[0].get_header("X-goog-api-key") == "test-key"
 
 
 def test_create_generator_rejects_missing_provider_key() -> None:
