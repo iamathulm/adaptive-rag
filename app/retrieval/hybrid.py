@@ -8,13 +8,13 @@ from app.retrieval.fusion import RRFFusion
 class HybridRetriever:
     def __init__(self, documents: list[dict[str, str]] | None = None) -> None:
         self.dense = DenseRetriever()
-        indexed_documents = (
-            documents
-            if documents is not None
-            else self.dense.vector_store.get_documents()
-        )
-        self.bm25 = BM25Retriever(indexed_documents)
+        self.bm25 = BM25Retriever(documents or [])
+        self._documents_loaded = documents is not None
         self.fusion = RRFFusion()
+
+    def refresh(self) -> None:
+        self.bm25 = BM25Retriever(self.dense.vector_store.get_documents())
+        self._documents_loaded = True
 
     def search(
         self,
@@ -22,6 +22,9 @@ class HybridRetriever:
         top_k: int | None = None,
     ) -> list[RetrievalResult]:
         limit = settings.retrieval_top_k if top_k is None else top_k
+
+        if not self._documents_loaded:
+            self.refresh()
 
         bm25_results = self.bm25.search(query, limit)
         dense_results = self.dense.search(query, limit)
