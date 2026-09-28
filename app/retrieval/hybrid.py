@@ -1,3 +1,5 @@
+from typing import Literal
+
 from app.core.config import settings
 from app.models.retrieval import RetrievalResult
 from app.retrieval.bm25 import BM25Retriever
@@ -20,14 +22,42 @@ class HybridRetriever:
         self,
         query: str,
         top_k: int | None = None,
+        backend: Literal["bm25", "dense", "hybrid"] = "hybrid",
+        document_id: str | None = None,
+        source: str | None = None,
     ) -> list[RetrievalResult]:
         limit = settings.retrieval_top_k if top_k is None else top_k
 
         if not self._documents_loaded:
             self.refresh()
 
-        bm25_results = self.bm25.search(query, limit)
-        dense_results = self.dense.search(query, limit)
+        if backend == "bm25":
+            return self.bm25.search(
+                query,
+                limit,
+                document_id=document_id,
+                source=source,
+            )[:limit]
+        if backend == "dense":
+            return self.dense.search(
+                query,
+                limit,
+                document_id=document_id,
+                source=source,
+            )[:limit]
+
+        bm25_results = self.bm25.search(
+            query,
+            limit,
+            document_id=document_id,
+            source=source,
+        )
+        dense_results = self.dense.search(
+            query,
+            limit,
+            document_id=document_id,
+            source=source,
+        )
 
         ranked_lists = [
             bm25_results,

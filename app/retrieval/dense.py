@@ -8,9 +8,20 @@ class DenseRetriever:
         self.embedder = Embedder()
         self.vector_store = VectorStore()
 
-    def search(self, query: str, top_k: int = 5) -> list[RetrievalResult]:
+    def search(
+        self,
+        query: str,
+        top_k: int = 5,
+        document_id: str | None = None,
+        source: str | None = None,
+    ) -> list[RetrievalResult]:
         vector = self.embedder.embed(query)
-        results = self.vector_store.search(vector, top_k=top_k)
+        results = self.vector_store.search(
+            vector,
+            top_k=top_k,
+            document_id=document_id,
+            source=source,
+        )
 
         return [
             RetrievalResult(
@@ -18,7 +29,7 @@ class DenseRetriever:
                 chunk_id=str(result.payload.get("chunk_id", result.id)),
                 content=str(result.payload.get("content", "")),
                 score=float(result.score),
-                source="dense",
+                source=str(result.payload.get("source", "dense")),
             )
             for result in results
         ]

@@ -49,3 +49,21 @@ def test_hybrid_search_combines_results(mock_dense) -> None:
 
     assert by_id["1"].content == "python programming"
     assert by_id["2"].content == "retrieval augmented generation"
+
+
+@patch("app.retrieval.hybrid.DenseRetriever")
+def test_hybrid_can_select_bm25_without_calling_dense(mock_dense) -> None:
+    documents = [
+        {
+            "document_id": "1",
+            "chunk_id": "1",
+            "content": "python programming",
+            "source": "test",
+        }
+    ]
+
+    retriever = HybridRetriever(documents)
+    results = retriever.search("python", top_k=1, backend="bm25")
+
+    assert results[0].source == "bm25"
+    mock_dense.return_value.search.assert_not_called()

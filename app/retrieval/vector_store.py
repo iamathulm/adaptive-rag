@@ -1,5 +1,5 @@
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams
+from qdrant_client.models import Distance, FieldCondition, Filter, MatchValue, VectorParams
 
 from app.core.config import settings
 
@@ -27,11 +27,24 @@ class VectorStore:
         vector: list[float],
         collection_name: str = "documents",
         top_k: int = 5,
+        document_id: str | None = None,
+        source: str | None = None,
     ):
+        query = {
+            "collection_name": collection_name,
+            "query": vector,
+            "limit": top_k,
+        }
+        conditions = [
+            FieldCondition(key=key, match=MatchValue(value=value))
+            for key, value in (("document_id", document_id), ("source", source))
+            if value is not None
+        ]
+        if conditions:
+            query["query_filter"] = Filter(must=conditions)
+
         return self.client.query_points(
-            collection_name=collection_name,
-            query=vector,
-            limit=top_k,
+            **query,
         ).points
 
     def get_documents(

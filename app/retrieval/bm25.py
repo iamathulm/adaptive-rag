@@ -16,6 +16,8 @@ class BM25Retriever:
         self,
         query: str,
         top_k: int = 5,
+        document_id: str | None = None,
+        source: str | None = None,
     ) -> list[RetrievalResult]:
         if self._index is None:
             return []
@@ -26,6 +28,12 @@ class BM25Retriever:
             key=lambda item: item[1],
             reverse=True,
         )
+        ranked = [
+            (document, score)
+            for document, score in ranked
+            if (document_id is None or document.get("document_id") == document_id)
+            and (source is None or document.get("source") == source)
+        ]
 
         return [
             RetrievalResult(

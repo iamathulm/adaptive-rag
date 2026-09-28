@@ -17,6 +17,17 @@ from app.retrieval.hybrid import HybridRetriever
 router = APIRouter(prefix="/retrieval", tags=["retrieval"])
 answer_router = APIRouter(prefix="/answer", tags=["answer"])
 
+
+def _retrieval_kwargs(request) -> dict[str, object]:
+    kwargs: dict[str, object] = {}
+    if request.backend != "hybrid":
+        kwargs["backend"] = request.backend
+    if request.document_id is not None:
+        kwargs["document_id"] = request.document_id
+    if request.source is not None:
+        kwargs["source"] = request.source
+    return kwargs
+
 @router.post("", response_model=RetrievalResponse)
 async def retrieve(
     request: RetrievalRequest,
@@ -26,6 +37,7 @@ async def retrieve(
         retriever.search,
         request.query,
         request.top_k,
+        **_retrieval_kwargs(request),
     )
     return RetrievalResponse(
         results=[
@@ -50,6 +62,7 @@ async def answer(
         retriever.search,
         request.query,
         request.top_k,
+        **_retrieval_kwargs(request),
     )
 
     try:
