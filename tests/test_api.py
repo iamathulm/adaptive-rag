@@ -95,6 +95,14 @@ def test_answer_endpoint() -> None:
         assert response.status_code == 200
         assert response.json() == {
             "answer": "answer for test query [chunk-1]",
+            "citations": [
+                {
+                    "chunk_id": "chunk-1",
+                    "document_id": "1",
+                    "source": "dense",
+                }
+            ],
+            "grounded": True,
             "sources": [
                 {
                     "document_id": "1",
@@ -105,6 +113,39 @@ def test_answer_endpoint() -> None:
                 }
             ],
         }
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_answer_endpoint_marks_fabricated_citations_as_ungrounded() -> None:
+    from app.api.dependencies import get_generator, get_retriever
+
+    class FakeRetriever:
+        def search(self, query: str, top_k: int | None = None):
+            return [
+                RetrievalResult(
+                    document_id="1",
+                    chunk_id="chunk-1",
+                    content="context",
+                    score=0.95,
+                    source="dense",
+                )
+            ]
+
+    class FakeGenerator:
+        def generate(self, query: str, results: list[RetrievalResult]) -> str:
+            return "Unsupported claim [not-a-result]"
+
+    app.dependency_overrides[get_retriever] = lambda: FakeRetriever()
+    app.dependency_overrides[get_generator] = lambda: FakeGenerator()
+
+    try:
+        client = TestClient(app)
+        response = client.post("/answer", json={"query": "test"})
+
+        assert response.status_code == 200
+        assert response.json()["citations"] == []
+        assert response.json()["grounded"] is False
     finally:
         app.dependency_overrides.clear()
 

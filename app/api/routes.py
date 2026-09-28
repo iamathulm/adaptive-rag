@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from starlette.concurrency import run_in_threadpool
 
 from app.api.dependencies import get_generator, get_retriever
+from app.generation.citations import validate_citations
 from app.generation.generator import AnswerGenerator, GenerationError
 from app.models.answer import AnswerRequest, AnswerResponse
 from app.models.api import (
@@ -66,4 +67,10 @@ async def answer(
             },
         ) from exc
 
-    return AnswerResponse(answer=generated_answer, sources=results)
+    citations, grounded = validate_citations(generated_answer, results)
+    return AnswerResponse(
+        answer=generated_answer,
+        citations=citations,
+        grounded=grounded,
+        sources=results,
+    )
