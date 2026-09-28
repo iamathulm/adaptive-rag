@@ -8,7 +8,6 @@ from app.ingestion import DocumentChunker, DocumentProcessor
 from app.models.evaluation import EvaluationCase
 from app.retrieval.hybrid import HybridRetriever
 
-
 PDF_PATH = "tests/fixtures/sample.pdf"
 DOCUMENT_ID = "sample-pdf"
 TOP_K = 3
