@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
 from app.api.routes import answer_router, ingest_router
 from app.api.routes import router as retrieval_router
@@ -30,6 +31,33 @@ app.include_router(answer_router)
 app.include_router(ingest_router)
 
 
+@app.get("/health/live")
+async def liveness_check() -> dict[str, str]:
+    return {"status": "ok"}
+
+
 @app.get("/health")
 async def health_check() -> dict[str, str]:
-    return {"status": "ok"}
+    return await liveness_check()
+
+
+@app.get("/health/ready")
+async def readiness_check() -> JSONResponse:
+    checks: dict[str, str] = {
+        "qdrant": "ok",
+        "generation": "ok",
+    }
+
+    try:
+        VectorStore().client.get_collections()
+    except Exception:
+        checks["qdrant"] = "unavailable"
+
+    if settings.generation_provider == "gemini" and settings.gemini_api_key is None:
+        checks["generation"] = "not_configured"
+
+    is_ready = all(status == "ok" for status in checks.values())
+    return JSONResponse(
+        status_code=200 if is_ready else 503,
+        content={"status": "ok" if is_ready else "unavailable", "checks": checks},
+    )

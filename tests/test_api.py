@@ -68,6 +68,60 @@ def test_health_endpoint() -> None:
     assert response.json() == {"status": "ok"}
 
 
+def test_liveness_endpoint() -> None:
+    client = TestClient(app)
+
+    response = client.get("/health/live")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+def test_readiness_endpoint_reports_dependencies(monkeypatch) -> None:
+    import app.main as main_module
+
+    class FakeClient:
+        def get_collections(self):
+            return object()
+
+    class FakeVectorStore:
+        client = FakeClient()
+
+    monkeypatch.setattr(main_module, "VectorStore", FakeVectorStore)
+    client = TestClient(app)
+
+    response = client.get("/health/ready")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ok",
+        "checks": {"qdrant": "ok", "generation": "ok"},
+    }
+
+
+def test_readiness_endpoint_hides_qdrant_failure(monkeypatch) -> None:
+    import app.main as main_module
+
+    class FailingClient:
+        def get_collections(self):
+            raise RuntimeError("private connection details")
+
+    class FailingVectorStore:
+        client = FailingClient()
+
+    monkeypatch.setattr(main_module, "VectorStore", FailingVectorStore)
+    client = TestClient(app)
+
+    response = client.get("/health/ready")
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "status": "unavailable",
+        "checks": {"qdrant": "unavailable", "generation": "ok"},
+    }
+    assert "private connection details" not in response.text
+
+
 def test_answer_endpoint() -> None:
     from app.api.dependencies import get_generator, get_retriever
 
