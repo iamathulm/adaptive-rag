@@ -1,7 +1,28 @@
-# app/evaluation.py
+import json
+import math
+from pathlib import Path
 
 from app.models.evaluation import EvaluationCase, EvaluationResult
 from app.retrieval.hybrid import HybridRetriever
+
+
+def load_evaluation_cases(path: str | Path) -> list[EvaluationCase]:
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    return [EvaluationCase.model_validate(case) for case in data]
+
+
+def _ndcg(retrieved_ids: list[str], relevant_ids: set[str]) -> float:
+    if not relevant_ids:
+        return 0.0
+
+    dcg = sum(
+        1 / math.log2(rank + 1)
+        for rank, chunk_id in enumerate(retrieved_ids, start=1)
+        if chunk_id in relevant_ids
+    )
+    ideal_hits = min(len(relevant_ids), len(retrieved_ids))
+    ideal_dcg = sum(1 / math.log2(rank + 1) for rank in range(1, ideal_hits + 1))
+    return dcg / ideal_dcg if ideal_dcg else 0.0
 
 
 class RetrievalEvaluator:
@@ -19,6 +40,7 @@ class RetrievalEvaluator:
             retrieved = self.retriever.search(
                 case.query,
                 top_k=top_k,
+                backend=case.backend,
             )
 
             retrieved_ids = [
@@ -30,6 +52,7 @@ class RetrievalEvaluator:
             hits = set(retrieved_ids) & relevant
 
             recall = len(hits) / len(relevant) if relevant else 0.0
+            precision = len(hits) / len(retrieved_ids) if retrieved_ids else 0.0
 
             reciprocal_rank = 0.0
             for rank, chunk_id in enumerate(retrieved_ids, start=1):
@@ -40,9 +63,12 @@ class RetrievalEvaluator:
             results.append(
                 EvaluationResult(
                     query=case.query,
+                    backend=case.backend,
                     retrieved_chunk_ids=retrieved_ids,
                     recall_at_k=recall,
+                    precision_at_k=precision,
                     reciprocal_rank=reciprocal_rank,
+                    ndcg_at_k=_ndcg(retrieved_ids, relevant),
                 )
             )
 

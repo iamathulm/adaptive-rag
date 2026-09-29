@@ -1,0 +1,12 @@
+[
+  {
+    "query": "What is this document about?",
+    "relevant_chunk_ids": ["sample-pdf:0"],
+    "backend": "hybrid"
+  },
+  {
+    "query": "What is the main topic of the document?",
+    "relevant_chunk_ids": ["sample-pdf:0"],
+    "backend": "hybrid"
+  }
+]

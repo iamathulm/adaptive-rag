@@ -3,14 +3,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.evaluation import RetrievalEvaluator
+from app.evaluation import RetrievalEvaluator, load_evaluation_cases
 from app.ingestion import DocumentChunker, DocumentProcessor
-from app.models.evaluation import EvaluationCase
 from app.retrieval.hybrid import HybridRetriever
 
 PDF_PATH = "tests/fixtures/sample.pdf"
 DOCUMENT_ID = "sample-pdf"
 TOP_K = 3
+EVALUATION_PATH = "tests/fixtures/evaluation_cases_v1.json"
 
 
 def main() -> None:
@@ -28,12 +28,7 @@ def main() -> None:
         [chunk.model_dump() for chunk in chunks]
     )
 
-    cases = [
-        EvaluationCase(
-            query="What is this document about?",
-            relevant_chunk_ids={chunk.chunk_id for chunk in chunks},
-        ),
-    ]
+    cases = load_evaluation_cases(EVALUATION_PATH)
 
     evaluator = RetrievalEvaluator(retriever)
     results = evaluator.evaluate(cases, top_k=TOP_K)
@@ -42,7 +37,9 @@ def main() -> None:
         print(f"\nQuery: {result.query}")
         print(f"Retrieved: {result.retrieved_chunk_ids}")
         print(f"Recall@{TOP_K}: {result.recall_at_k:.3f}")
+        print(f"Precision@{TOP_K}: {result.precision_at_k:.3f}")
         print(f"MRR@{TOP_K}: {result.reciprocal_rank:.3f}")
+        print(f"nDCG@{TOP_K}: {result.ndcg_at_k:.3f}")
 
 
 if __name__ == "__main__":
