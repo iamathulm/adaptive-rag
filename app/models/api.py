@@ -20,3 +20,8 @@ class RetrievalResponseItem(BaseModel):
 
 class RetrievalResponse(BaseModel):
     results: list[RetrievalResponseItem]
+
+
+class IngestionResponse(BaseModel):
+    document_id: str
+    chunks_indexed: int

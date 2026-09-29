@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -187,5 +189,58 @@ def test_answer_endpoint_hides_generation_failure() -> None:
             }
         }
         assert "secret provider details" not in response.text
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_ingest_endpoint_indexes_uploaded_pdf() -> None:
+    from app.api.dependencies import get_ingestion_service
+
+    captured = {}
+
+    class FakeIngestionService:
+        def ingest(self, file_path: str, document_id: str) -> int:
+            captured["path"] = file_path
+            captured["document_id"] = document_id
+            with open(file_path, "rb") as uploaded_file:
+                captured["content"] = uploaded_file.read()
+            return 3
+
+    app.dependency_overrides[get_ingestion_service] = lambda: FakeIngestionService()
+
+    try:
+        client = TestClient(app)
+        response = client.post(
+            "/ingest",
+            files={"file": ("sample.pdf", b"pdf bytes", "application/pdf")},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"document_id": "sample", "chunks_indexed": 3}
+        assert captured["document_id"] == "sample"
+        assert captured["content"] == b"pdf bytes"
+        assert not Path(captured["path"]).exists()
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_ingest_endpoint_rejects_unsupported_files() -> None:
+    from app.api.dependencies import get_ingestion_service
+
+    class FailingIngestionService:
+        def ingest(self, file_path: str, document_id: str) -> int:
+            raise AssertionError("unsupported files must be rejected before ingestion")
+
+    app.dependency_overrides[get_ingestion_service] = lambda: FailingIngestionService()
+
+    try:
+        client = TestClient(app)
+        response = client.post(
+            "/ingest",
+            files={"file": ("sample.txt", b"text", "text/plain")},
+        )
+
+        assert response.status_code == 415
+        assert response.json() == {"detail": "Only PDF and DOCX files are supported"}
     finally:
         app.dependency_overrides.clear()

@@ -2,6 +2,7 @@ from functools import lru_cache
 
 from app.core.config import settings
 from app.generation.generator import AnswerGenerator, create_generator
+from app.ingestion import IngestionService
 from app.retrieval.hybrid import HybridRetriever
 
 
@@ -13,3 +14,8 @@ def get_retriever() -> HybridRetriever:
 @lru_cache
 def get_generator() -> AnswerGenerator:
     return create_generator(settings)
+
+
+@lru_cache
+def get_ingestion_service() -> IngestionService:
+    return IngestionService()

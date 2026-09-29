@@ -1,13 +1,18 @@
+import tempfile
+from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from starlette.concurrency import run_in_threadpool
 
-from app.api.dependencies import get_generator, get_retriever
+from app.api.dependencies import get_generator, get_ingestion_service, get_retriever
+from app.core.config import settings
 from app.generation.citations import validate_citations
 from app.generation.generator import AnswerGenerator, GenerationError
+from app.ingestion import IngestionService
 from app.models.answer import AnswerRequest, AnswerResponse
 from app.models.api import (
+    IngestionResponse,
     RetrievalRequest,
     RetrievalResponse,
     RetrievalResponseItem,
@@ -16,6 +21,7 @@ from app.retrieval.hybrid import HybridRetriever
 
 router = APIRouter(prefix="/retrieval", tags=["retrieval"])
 answer_router = APIRouter(prefix="/answer", tags=["answer"])
+ingest_router = APIRouter(prefix="/ingest", tags=["ingestion"])
 
 
 def _retrieval_kwargs(request) -> dict[str, object]:
@@ -90,4 +96,54 @@ async def answer(
         citations=citations,
         grounded=grounded,
         sources=results,
+    )
+
+
+@ingest_router.post("", response_model=IngestionResponse)
+async def ingest(
+    file: Annotated[UploadFile, File(...)],
+    document_id: Annotated[str | None, Form()] = None,
+    service: Annotated[IngestionService, Depends(get_ingestion_service)] = None,
+) -> IngestionResponse:
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="A filename is required")
+
+    suffix = Path(file.filename).suffix.lower()
+    if suffix not in {".pdf", ".docx"}:
+        raise HTTPException(status_code=415, detail="Only PDF and DOCX files are supported")
+
+    content = await file.read(settings.ingestion_max_file_size_bytes + 1)
+    if len(content) > settings.ingestion_max_file_size_bytes:
+        raise HTTPException(status_code=413, detail="The uploaded file is too large")
+
+    resolved_document_id = document_id or Path(file.filename).stem
+    if not resolved_document_id:
+        raise HTTPException(status_code=400, detail="A document ID is required")
+
+    temporary_path: str | None = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temporary_file:
+            temporary_file.write(content)
+            temporary_path = temporary_file.name
+
+        chunks_indexed = await run_in_threadpool(
+            service.ingest,
+            temporary_path,
+            resolved_document_id,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "ingestion_failed",
+                "message": "The document could not be ingested",
+            },
+        ) from exc
+    finally:
+        if temporary_path:
+            Path(temporary_path).unlink(missing_ok=True)
+
+    return IngestionResponse(
+        document_id=resolved_document_id,
+        chunks_indexed=chunks_indexed,
     )

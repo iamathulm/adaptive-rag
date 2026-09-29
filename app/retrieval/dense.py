@@ -5,8 +5,14 @@ from app.retrieval.vector_store import VectorStore
 
 class DenseRetriever:
     def __init__(self) -> None:
-        self.embedder = Embedder()
+        self._embedder: Embedder | None = None
         self.vector_store = VectorStore()
+
+    @property
+    def embedder(self) -> Embedder:
+        if self._embedder is None:
+            self._embedder = Embedder()
+        return self._embedder
 
     def search(
         self,

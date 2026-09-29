@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     generation_timeout_seconds: float = 30.0
     generation_max_tokens: int = 512
     generation_temperature: float = 0.0
+    ingestion_max_file_size_bytes: int = 25_000_000
 
     model_config = SettingsConfigDict(
         env_file=".env",
