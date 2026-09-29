@@ -73,6 +73,8 @@ class HybridRetriever:
                 content=result.content,
                 score=score,
                 source="hybrid",
+                page=result.page,
+                content_hash=result.content_hash,
             )
             for result, score in fused
         ]

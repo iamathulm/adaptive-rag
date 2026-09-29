@@ -13,7 +13,7 @@ def test_validate_citations_deduplicates_known_chunks() -> None:
 
     citations, grounded = validate_citations("Answer [chunk-1] [chunk-1]", [result])
 
-    assert [citation.model_dump() for citation in citations] == [
+    assert [citation.model_dump(exclude_none=True) for citation in citations] == [
         {
             "chunk_id": "chunk-1",
             "document_id": "doc-1",

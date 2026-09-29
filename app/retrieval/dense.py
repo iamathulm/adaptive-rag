@@ -30,6 +30,8 @@ class DenseRetriever:
                 content=str(result.payload.get("content", "")),
                 score=float(result.score),
                 source=str(result.payload.get("source", "dense")),
+                page=result.payload.get("page"),
+                content_hash=result.payload.get("content_hash"),
             )
             for result in results
         ]

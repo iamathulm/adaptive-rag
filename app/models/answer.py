@@ -17,6 +17,8 @@ class AnswerCitation(BaseModel):
     chunk_id: str
     document_id: str
     source: str
+    page: int | None = None
+    content_hash: str | None = None
 
 
 class AnswerResponse(BaseModel):

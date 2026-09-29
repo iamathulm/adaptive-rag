@@ -78,6 +78,8 @@ class VectorStore:
                         "chunk_id": str(payload.get("chunk_id", point.id)),
                         "content": str(content),
                         "source": str(payload.get("source", "")),
+                        "page": payload.get("page"),
+                        "content_hash": payload.get("content_hash"),
                     }
                 )
 

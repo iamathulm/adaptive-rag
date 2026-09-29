@@ -30,6 +30,8 @@ def validate_citations(
                 chunk_id=result.chunk_id,
                 document_id=result.document_id,
                 source=result.source,
+                page=result.page,
+                content_hash=result.content_hash,
             )
         )
 

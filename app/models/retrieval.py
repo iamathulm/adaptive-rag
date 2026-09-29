@@ -7,3 +7,5 @@ class RetrievalResult(BaseModel):
     content: str
     score: float
     source: str
+    page: int | None = None
+    content_hash: str | None = None

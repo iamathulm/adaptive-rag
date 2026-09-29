@@ -52,7 +52,11 @@ async def retrieve(
     )
 
 
-@answer_router.post("", response_model=AnswerResponse)
+@answer_router.post(
+    "",
+    response_model=AnswerResponse,
+    response_model_exclude_none=True,
+)
 async def answer(
     request: AnswerRequest,
     retriever: Annotated[HybridRetriever, Depends(get_retriever)],

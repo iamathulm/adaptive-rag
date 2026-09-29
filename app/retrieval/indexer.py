@@ -1,3 +1,4 @@
+import hashlib
 from uuid import NAMESPACE_URL, uuid5
 
 from app.models.chunk import DocumentChunk
@@ -22,11 +23,16 @@ class DocumentIndexer:
         for chunk in chunks:
             vector = self.embedder.embed(chunk.content)
 
+            payload = chunk.model_dump(exclude_none=True)
+            payload["content_hash"] = payload.get("content_hash") or hashlib.sha256(
+                chunk.content.encode("utf-8")
+            ).hexdigest()
+
             points.append(
                 {
                     "id": str(uuid5(NAMESPACE_URL, chunk.chunk_id)),
                     "vector": vector,
-                    "payload": chunk.model_dump(),
+                    "payload": payload,
                 }
             )
 

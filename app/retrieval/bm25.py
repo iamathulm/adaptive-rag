@@ -42,6 +42,8 @@ class BM25Retriever:
     content=document["content"],
     score=float(score),
     source="bm25",
+                page=document.get("page"),
+                content_hash=document.get("content_hash"),
 )
             for document, score in ranked[:top_k]
         ]

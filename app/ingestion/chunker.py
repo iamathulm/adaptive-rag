@@ -1,3 +1,4 @@
+import hashlib
 from pathlib import Path
 
 from docling.chunking import HybridChunker
@@ -48,6 +49,7 @@ class DocumentChunker:
                     content=chunk.text,
                     source=str(source),
                     page=page,
+                    content_hash=hashlib.sha256(chunk.text.encode("utf-8")).hexdigest(),
                 )
             )
 

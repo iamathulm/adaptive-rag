@@ -7,3 +7,4 @@ class DocumentChunk(BaseModel):
     content: str
     source: str
     page: int | None = None
+    content_hash: str | None = None

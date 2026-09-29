@@ -38,4 +38,5 @@ def test_index_documents(mock_store, mock_embedder) -> None:
         "content": "test document",
         "source": "test",
         "page": 1,
+        "content_hash": "4837479125758add3ba4c99153bb855c8519f86a7f672b26b155bea6adcbb41a",
     }
