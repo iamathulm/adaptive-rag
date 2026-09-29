@@ -1,6 +1,6 @@
 import pytest
 
-from app.evaluation import RetrievalEvaluator, load_evaluation_cases
+from app.evaluation import RetrievalEvaluator, benchmark_retrieval, load_evaluation_cases
 from app.models.evaluation import EvaluationCase
 from app.models.retrieval import RetrievalResult
 
@@ -49,3 +49,14 @@ def test_load_evaluation_cases(tmp_path) -> None:
 
     assert cases[0].backend == "bm25"
     assert cases[0].relevant_chunk_ids == {"chunk-1"}
+
+
+def test_benchmark_retrieval_reports_all_backends() -> None:
+    cases = [EvaluationCase(query="question", relevant_chunk_ids={"chunk-2"})]
+
+    results = benchmark_retrieval(FakeRetriever(), cases, top_k=2)
+
+    assert [result.backend for result in results] == ["bm25", "dense", "hybrid"]
+    assert all(result.query_count == 1 for result in results)
+    assert all(result.average_latency_ms >= 0 for result in results)
+    assert all(result.p95_latency_ms >= 0 for result in results)
