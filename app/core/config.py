@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     generation_timeout_seconds: float = 30.0
     generation_max_tokens: int = 512
     generation_temperature: float = 0.0
+    generation_max_retries: int = 2
+    generation_retry_backoff_seconds: float = 0.25
     ingestion_max_file_size_bytes: int = 25_000_000
 
     model_config = SettingsConfigDict(

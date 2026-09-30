@@ -1,4 +1,5 @@
 import json
+from urllib.error import HTTPError
 
 import pytest
 
@@ -74,3 +75,53 @@ def test_create_generator_rejects_missing_provider_key() -> None:
 
 def test_create_generator_uses_mock_by_default() -> None:
     assert isinstance(create_generator(Settings()), MockAnswerGenerator)
+
+
+def test_gemini_generator_retries_rate_limits() -> None:
+    attempts = []
+
+    def open_request(request, **_kwargs):
+        attempts.append(request)
+        if len(attempts) == 1:
+            raise HTTPError(request.full_url, 429, "rate limited", {}, None)
+        return FakeResponse(
+            {"candidates": [{"content": {"parts": [{"text": "Recovered"}]}}]}
+        )
+
+    generator = GeminiAnswerGenerator(
+        api_key="test-key",
+        model="test-model",
+        timeout=1,
+        max_tokens=10,
+        temperature=0,
+        opener=open_request,
+        max_retries=1,
+        retry_backoff_seconds=0,
+    )
+
+    assert generator.generate("Question", RESULTS) == "Recovered"
+    assert len(attempts) == 2
+
+
+def test_gemini_generator_does_not_retry_client_errors() -> None:
+    attempts = []
+
+    def open_request(request, **_kwargs):
+        attempts.append(request)
+        raise HTTPError(request.full_url, 400, "bad request", {}, None)
+
+    generator = GeminiAnswerGenerator(
+        api_key="test-key",
+        model="test-model",
+        timeout=1,
+        max_tokens=10,
+        temperature=0,
+        opener=open_request,
+        max_retries=2,
+        retry_backoff_seconds=0,
+    )
+
+    with pytest.raises(GenerationError, match="request failed"):
+        generator.generate("Question", RESULTS)
+
+    assert len(attempts) == 1

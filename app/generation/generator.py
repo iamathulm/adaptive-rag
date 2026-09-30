@@ -1,4 +1,5 @@
 import json
+import time
 from collections.abc import Callable
 from typing import Protocol
 from urllib.error import HTTPError, URLError
@@ -54,6 +55,8 @@ class _HttpAnswerGenerator:
         max_tokens: int,
         temperature: float,
         opener: Callable[..., object] = urlopen,
+        max_retries: int = 0,
+        retry_backoff_seconds: float = 0.0,
     ) -> None:
         self.api_key = api_key
         self.model = model
@@ -61,6 +64,8 @@ class _HttpAnswerGenerator:
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.opener = opener
+        self.max_retries = max_retries
+        self.retry_backoff_seconds = retry_backoff_seconds
 
     def _request(self, url: str, payload: dict, headers: dict[str, str]) -> dict:
         request = Request(
@@ -70,11 +75,24 @@ class _HttpAnswerGenerator:
             method="POST",
         )
 
-        try:
-            with self.opener(request, timeout=self.timeout) as response:
-                return json.loads(response.read())
-        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as exc:
-            raise GenerationError("Generation provider request failed") from exc
+        for attempt in range(self.max_retries + 1):
+            try:
+                with self.opener(request, timeout=self.timeout) as response:
+                    return json.loads(response.read())
+            except HTTPError as exc:
+                failure = exc
+                retryable = exc.code == 429 or 500 <= exc.code <= 599
+            except (URLError, TimeoutError) as exc:
+                failure = exc
+                retryable = True
+            except json.JSONDecodeError as exc:
+                failure = exc
+                retryable = False
+
+            if not retryable or attempt == self.max_retries:
+                raise GenerationError("Generation provider request failed") from failure
+
+            time.sleep(self.retry_backoff_seconds * (2**attempt))
 
 
 class GeminiAnswerGenerator(_HttpAnswerGenerator):
@@ -104,6 +122,8 @@ def create_generator(config: Settings = settings) -> AnswerGenerator:
         "timeout": config.generation_timeout_seconds,
         "max_tokens": config.generation_max_tokens,
         "temperature": config.generation_temperature,
+        "max_retries": config.generation_max_retries,
+        "retry_backoff_seconds": config.generation_retry_backoff_seconds,
     }
 
     if config.generation_provider == "mock":
