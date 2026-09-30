@@ -1,14 +1,41 @@
 services:
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      GENERATION_PROVIDER: ${GENERATION_PROVIDER:-gemini}
+      GENERATION_MODEL: ${GENERATION_MODEL:-gemini-2.0-flash}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GENERATION_TIMEOUT_SECONDS: ${GENERATION_TIMEOUT_SECONDS:-30}
+      GENERATION_MAX_TOKENS: ${GENERATION_MAX_TOKENS:-512}
+      GENERATION_TEMPERATURE: ${GENERATION_TEMPERATURE:-0.0}
+      GENERATION_REQUESTS_PER_MINUTE: ${GENERATION_REQUESTS_PER_MINUTE:-5}
+      GENERATION_REQUESTS_PER_DAY: ${GENERATION_REQUESTS_PER_DAY:-100}
+      GENERATION_MAX_CONCURRENT_REQUESTS: ${GENERATION_MAX_CONCURRENT_REQUESTS:-1}
     ports:
       - "8000:8000"
-    environment:
-      QDRANT_URL: http://qdrant:6333
     depends_on:
-      - qdrant
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
 
   qdrant:
-    image: qdrant/qdrant:latest
+    image: qdrant/qdrant:v1.14.1
     ports:
       - "6333:6333"
+    volumes:
+      - qdrant_data:/var/lib/qdrant
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:6333/readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  qdrant_data:

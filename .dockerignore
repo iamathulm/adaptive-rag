@@ -1,9 +1,25 @@
-.venv
-.git
-.github
-.pytest_cache
-.ruff_cache
-__pycache__
+# Python and local tooling
+.venv/
+.git/
+.github/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+__pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.log
+
+# Local secrets and ephemeral files
 .env
-tests
+.env.*
+
+# Project artifacts
+coverage/
+htmlcov/
+.DS_Store
+
+# Tests and docs are not required in the final container image
+tests/
+README.md
