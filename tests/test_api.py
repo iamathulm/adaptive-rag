@@ -66,6 +66,16 @@ def test_health_endpoint() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+    assert response.headers["x-request-id"]
+
+
+def test_request_id_is_preserved() -> None:
+    client = TestClient(app)
+
+    response = client.get("/health", headers={"x-request-id": "request-123"})
+
+    assert response.status_code == 200
+    assert response.headers["x-request-id"] == "request-123"
 
 
 def test_liveness_endpoint() -> None:

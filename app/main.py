@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
+from time import perf_counter
+from uuid import uuid4
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.api.routes import answer_router, ingest_router
@@ -29,6 +31,35 @@ app = FastAPI(title=settings.app_name, lifespan=lifespan)
 app.include_router(retrieval_router)
 app.include_router(answer_router)
 app.include_router(ingest_router)
+
+
+@app.middleware("http")
+async def request_logging_middleware(request: Request, call_next):
+    request_id = request.headers.get("x-request-id") or str(uuid4())
+    started = perf_counter()
+
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.exception(
+            "request_failed",
+            method=request.method,
+            path=request.url.path,
+            request_id=request_id,
+        )
+        raise
+
+    duration_ms = (perf_counter() - started) * 1000
+    response.headers["x-request-id"] = request_id
+    logger.info(
+        "request_completed",
+        method=request.method,
+        path=request.url.path,
+        status_code=response.status_code,
+        duration_ms=round(duration_ms, 2),
+        request_id=request_id,
+    )
+    return response
 
 
 @app.get("/health/live")
