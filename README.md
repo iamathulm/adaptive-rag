@@ -7,6 +7,7 @@ Adaptive Multimodal RAG is a local-first retrieval-augmented generation system b
 - Retrieval with BM25, dense embeddings, and hybrid fusion
 - Qdrant-backed storage for vector search and indexing
 - Document ingestion pipeline with chunking and provenance metadata
+- PDF and DOCX document support
 - Provider abstraction for mock and Gemini generation
 - Input validation, safe failure handling, and request logging
 - Free-tier protection for Gemini through concurrency and quota guards
@@ -85,7 +86,7 @@ This starts the API and Qdrant together. The service reads its runtime config fr
 ## API endpoints
 
 - `GET /health` and `GET /health/ready`
-- `GET /retrieval` and `POST /retrieval`
+- `POST /retrieval`
 - `POST /answer`
 - `POST /ingest`
 
@@ -110,12 +111,10 @@ To keep usage low in practice:
 app/
   api/
   core/
-  evaluation/
+  evaluation.py
   generation/
   ingestion/
   models/
-  providers/
-  reranking/
   retrieval/
 scripts/
 tests/

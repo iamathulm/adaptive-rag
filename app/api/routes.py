@@ -140,6 +140,7 @@ async def ingest(
             service.ingest,
             temporary_path,
             resolved_document_id,
+            source=Path(file.filename).name,
         )
     except Exception as exc:
         raise HTTPException(

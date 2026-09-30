@@ -9,6 +9,7 @@ def test_ingest_converts_chunks_and_indexes() -> None:
     processor = MagicMock()
     chunker = MagicMock()
     indexer = MagicMock()
+    retriever = MagicMock()
 
     document = MagicMock()
     processor.convert.return_value.document = document
@@ -36,6 +37,7 @@ def test_ingest_converts_chunks_and_indexes() -> None:
         processor=processor,
         chunker=chunker,
         indexer=indexer,
+        retriever=retriever,
     )
 
     count = service.ingest(
@@ -56,3 +58,4 @@ def test_ingest_converts_chunks_and_indexes() -> None:
     )
 
     indexer.index.assert_called_once_with(chunks)
+    retriever.refresh.assert_called_once_with()

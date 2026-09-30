@@ -22,3 +22,16 @@ def test_vector_store_search(mock_client) -> None:
         query=[0.1] * 768,
         limit=3,
     )
+
+
+@patch("app.retrieval.vector_store.QdrantClient")
+def test_vector_store_deletes_document(mock_client) -> None:
+    store = VectorStore()
+
+    store.delete_document("doc-1")
+
+    mock_client.return_value.delete.assert_called_once()
+    call = mock_client.return_value.delete.call_args
+    assert call.kwargs["collection_name"] == "documents"
+    assert call.kwargs["points_selector"].must[0].key == "document_id"
+    assert call.kwargs["points_selector"].must[0].match.value == "doc-1"

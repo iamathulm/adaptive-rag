@@ -16,9 +16,9 @@ class RRFFusion:
 
         for ranked_list in ranked_lists:
             for rank, document in enumerate(ranked_list, start=1):
-                document_id = document.document_id
-                documents.setdefault(document_id, document)
-                scores[document_id] = scores.get(document_id, 0.0) + 1 / (
+                chunk_id = document.chunk_id
+                documents.setdefault(chunk_id, document)
+                scores[chunk_id] = scores.get(chunk_id, 0.0) + 1 / (
                     self.k + rank
                 )
 
@@ -29,6 +29,6 @@ class RRFFusion:
         )[:top_k]
 
         return [
-            (documents[document_id], score)
-            for document_id, score in ranked
+            (documents[chunk_id], score)
+            for chunk_id, score in ranked
         ]

@@ -47,6 +47,23 @@ class VectorStore:
             **query,
         ).points
 
+    def delete_document(
+        self,
+        document_id: str,
+        collection_name: str = "documents",
+    ) -> None:
+        self.client.delete(
+            collection_name=collection_name,
+            points_selector=Filter(
+                must=[
+                    FieldCondition(
+                        key="document_id",
+                        match=MatchValue(value=document_id),
+                    )
+                ]
+            ),
+        )
+
     def get_documents(
         self,
         collection_name: str = "documents",

@@ -17,6 +17,8 @@ class DocumentIndexer:
         collection_name: str = "documents",
     ) -> None:
         self.vector_store.ensure_collection(collection_name)
+        for document_id in {chunk.document_id for chunk in chunks}:
+            self.vector_store.delete_document(document_id, collection_name)
 
         points = []
 

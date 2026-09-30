@@ -25,6 +25,7 @@ def test_index_documents(mock_store, mock_embedder) -> None:
     indexer.index([chunk])
 
     store.ensure_collection.assert_called_once_with("documents")
+    store.delete_document.assert_called_once_with("doc-1", "documents")
     store.client.upsert.assert_called_once()
 
     call = store.client.upsert.call_args

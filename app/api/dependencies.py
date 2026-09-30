@@ -18,4 +18,4 @@ def get_generator() -> AnswerGenerator:
 
 @lru_cache
 def get_ingestion_service() -> IngestionService:
-    return IngestionService()
+    return IngestionService(retriever=get_retriever())

@@ -2,7 +2,7 @@ from app.models.retrieval import RetrievalResult
 from app.retrieval.fusion import RRFFusion
 
 
-def test_rrf_fuses_results_by_document_id() -> None:
+def test_rrf_fuses_results_by_chunk_id() -> None:
     first = RetrievalResult(
     document_id="1",
     chunk_id="1",
@@ -12,7 +12,7 @@ def test_rrf_fuses_results_by_document_id() -> None:
 )
     second = RetrievalResult(
     document_id="2",
-    chunk_id="1",
+    chunk_id="2",
     content="second document",
     score=0.8,
     source="dense",
@@ -29,3 +29,26 @@ def test_rrf_fuses_results_by_document_id() -> None:
     )
 
     assert [result.document_id for result, _ in results] == ["1", "2"]
+
+
+def test_rrf_keeps_multiple_chunks_from_one_document() -> None:
+    results = [
+        RetrievalResult(
+            document_id="doc-1",
+            chunk_id="doc-1:0",
+            content="first chunk",
+            score=0.9,
+            source="dense",
+        ),
+        RetrievalResult(
+            document_id="doc-1",
+            chunk_id="doc-1:1",
+            content="second chunk",
+            score=0.8,
+            source="dense",
+        ),
+    ]
+
+    fused = RRFFusion(k=60).fuse([results], top_k=2)
+
+    assert [result.chunk_id for result, _ in fused] == ["doc-1:0", "doc-1:1"]

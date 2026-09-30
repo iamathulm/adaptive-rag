@@ -1,9 +1,24 @@
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
 from app.models.retrieval import RetrievalResult
+
+
+@pytest.mark.asyncio
+async def test_lifespan_survives_qdrant_initialization_failure(monkeypatch) -> None:
+    import app.main as main_module
+
+    class FailingVectorStore:
+        def ensure_collection(self) -> None:
+            raise RuntimeError("qdrant unavailable")
+
+    monkeypatch.setattr(main_module, "VectorStore", FailingVectorStore)
+
+    async with main_module.lifespan(main_module.app):
+        pass
 
 
 def test_retrieval_endpoint() -> None:
@@ -294,9 +309,15 @@ def test_ingest_endpoint_indexes_uploaded_pdf() -> None:
     captured = {}
 
     class FakeIngestionService:
-        def ingest(self, file_path: str, document_id: str) -> int:
+        def ingest(
+            self,
+            file_path: str,
+            document_id: str,
+            source: str,
+        ) -> int:
             captured["path"] = file_path
             captured["document_id"] = document_id
+            captured["source"] = source
             with open(file_path, "rb") as uploaded_file:
                 captured["content"] = uploaded_file.read()
             return 3
@@ -313,6 +334,7 @@ def test_ingest_endpoint_indexes_uploaded_pdf() -> None:
         assert response.status_code == 200
         assert response.json() == {"document_id": "sample", "chunks_indexed": 3}
         assert captured["document_id"] == "sample"
+        assert captured["source"] == "sample.pdf"
         assert captured["content"] == b"pdf bytes"
         assert not Path(captured["path"]).exists()
     finally:

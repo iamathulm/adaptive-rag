@@ -17,7 +17,10 @@ async def lifespan(_: FastAPI):
     configure_logging()
 
     vector_store = VectorStore()
-    vector_store.ensure_collection()
+    try:
+        vector_store.ensure_collection()
+    except Exception:
+        logger.exception("qdrant_initialization_failed")
 
     logger.info(
         "application_started",
