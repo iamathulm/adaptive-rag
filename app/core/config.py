@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     generation_temperature: float = 0.0
     generation_max_retries: int = 2
     generation_retry_backoff_seconds: float = 0.25
+    generation_requests_per_minute: int = 5
+    generation_requests_per_day: int = 100
+    generation_max_concurrent_requests: int = 1
     ingestion_max_file_size_bytes: int = 25_000_000
 
     model_config = SettingsConfigDict(

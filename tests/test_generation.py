@@ -10,6 +10,7 @@ from app.generation.generator import (
     MockAnswerGenerator,
     create_generator,
 )
+from app.generation.limiter import GenerationRateLimiter, GenerationRateLimitError
 from app.models.retrieval import RetrievalResult
 
 RESULTS = [
@@ -125,3 +126,20 @@ def test_gemini_generator_does_not_retry_client_errors() -> None:
         generator.generate("Question", RESULTS)
 
     assert len(attempts) == 1
+
+
+def test_generation_rate_limiter_enforces_minute_limit() -> None:
+    limiter = GenerationRateLimiter(
+        requests_per_minute=1,
+        requests_per_day=10,
+        max_concurrent_requests=1,
+    )
+
+    with limiter.slot():
+        pass
+
+    with pytest.raises(GenerationRateLimitError) as error:
+        with limiter.slot():
+            pass
+
+    assert error.value.retry_after_seconds >= 1

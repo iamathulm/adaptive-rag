@@ -9,6 +9,7 @@ from app.api.dependencies import get_generator, get_ingestion_service, get_retri
 from app.core.config import settings
 from app.generation.citations import validate_citations
 from app.generation.generator import AnswerGenerator, GenerationError
+from app.generation.limiter import GenerationRateLimitError
 from app.ingestion import IngestionService
 from app.models.answer import AnswerRequest, AnswerResponse
 from app.models.api import (
@@ -81,6 +82,15 @@ async def answer(
             request.query,
             results,
         )
+    except GenerationRateLimitError as exc:
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "code": "generation_rate_limited",
+                "message": "The generation request limit has been reached",
+            },
+            headers={"Retry-After": str(max(1, round(exc.retry_after_seconds)))},
+        ) from exc
     except GenerationError as exc:
         raise HTTPException(
             status_code=502,

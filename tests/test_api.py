@@ -257,6 +257,37 @@ def test_answer_endpoint_hides_generation_failure() -> None:
         app.dependency_overrides.clear()
 
 
+def test_answer_endpoint_returns_rate_limit_response() -> None:
+    from app.api.dependencies import get_generator, get_retriever
+    from app.generation.limiter import GenerationRateLimitError
+
+    class FakeRetriever:
+        def search(self, query: str, top_k: int | None = None):
+            return []
+
+    class RateLimitedGenerator:
+        def generate(self, query: str, results: list[RetrievalResult]) -> str:
+            raise GenerationRateLimitError(7)
+
+    app.dependency_overrides[get_retriever] = lambda: FakeRetriever()
+    app.dependency_overrides[get_generator] = lambda: RateLimitedGenerator()
+
+    try:
+        client = TestClient(app)
+        response = client.post("/answer", json={"query": "test"})
+
+        assert response.status_code == 429
+        assert response.headers["retry-after"] == "7"
+        assert response.json() == {
+            "detail": {
+                "code": "generation_rate_limited",
+                "message": "The generation request limit has been reached",
+            }
+        }
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_ingest_endpoint_indexes_uploaded_pdf() -> None:
     from app.api.dependencies import get_ingestion_service
 

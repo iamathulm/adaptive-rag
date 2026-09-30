@@ -6,6 +6,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from app.core.config import Settings, settings
+from app.generation.limiter import GenerationRateLimiter
 from app.models.retrieval import RetrievalResult
 
 
@@ -57,6 +58,7 @@ class _HttpAnswerGenerator:
         opener: Callable[..., object] = urlopen,
         max_retries: int = 0,
         retry_backoff_seconds: float = 0.0,
+        rate_limiter: GenerationRateLimiter | None = None,
     ) -> None:
         self.api_key = api_key
         self.model = model
@@ -66,6 +68,7 @@ class _HttpAnswerGenerator:
         self.opener = opener
         self.max_retries = max_retries
         self.retry_backoff_seconds = retry_backoff_seconds
+        self.rate_limiter = rate_limiter
 
     def _request(self, url: str, payload: dict, headers: dict[str, str]) -> dict:
         request = Request(
@@ -77,8 +80,14 @@ class _HttpAnswerGenerator:
 
         for attempt in range(self.max_retries + 1):
             try:
-                with self.opener(request, timeout=self.timeout) as response:
-                    return json.loads(response.read())
+                if self.rate_limiter is None:
+                    response_context = self.opener(request, timeout=self.timeout)
+                    with response_context as response:
+                        return json.loads(response.read())
+
+                with self.rate_limiter.slot():
+                    with self.opener(request, timeout=self.timeout) as response:
+                        return json.loads(response.read())
             except HTTPError as exc:
                 failure = exc
                 retryable = exc.code == 429 or 500 <= exc.code <= 599
@@ -124,6 +133,11 @@ def create_generator(config: Settings = settings) -> AnswerGenerator:
         "temperature": config.generation_temperature,
         "max_retries": config.generation_max_retries,
         "retry_backoff_seconds": config.generation_retry_backoff_seconds,
+        "rate_limiter": GenerationRateLimiter(
+            requests_per_minute=config.generation_requests_per_minute,
+            requests_per_day=config.generation_requests_per_day,
+            max_concurrent_requests=config.generation_max_concurrent_requests,
+        ),
     }
 
     if config.generation_provider == "mock":
